@@ -102,6 +102,7 @@ diff <- as.vector(flights.normal$DEP_DELAY_NEW - flights.normal$CARRIER_DELAY - 
                   - flights.normal$SECURITY_DELAY - flights.normal$SECURITY_DELAY)
 flights.normal$NA_DELAY <- ifelse(diff > 0, diff, 0)
 
+
 ######################### Seperating ##########################
 
 dep_flights <- flights.normal[flights.normal$ORIGIN=="PIT",]
@@ -110,7 +111,7 @@ arv_flights <- flights.normal[flights.normal$ORIGIN!="PIT",]
 
 
 
-################### Flashing out .. ###################
+################### Flushing out .. ###################
 write.csv(dep_flights, "dep2016_visible.csv", row.names=FALSE)
 
 
