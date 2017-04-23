@@ -1,16 +1,19 @@
 library(glmnet)
+source('remove_columns.R')
 
 # read in training data
 flight.data.tr = read.csv('dep2015.csv')
+flight.data.tr = remove.columns(flight.data.tr)
 delay15.idx = which(names(flight.data.tr) == 'DEP_DEL15')
-X_train = flight.data.tr[-delay15.idx]
-y_train = unlist(flight.data.tr[delay15.idx])
+X_train = flight.data.tr[,-delay15.idx]
+y_train = unlist(flight.data.tr[,delay15.idx])
 
 # read in test data
 flight.data.te = read.csv('dep2016_visible.csv')
+flight.data.te = remove.columns(flight.data.te)
 delay16.idx = which(names(flight.data.te) == 'DEP_DEL15')
-X_test = flight.data.te[-delay16.idx]
-y_test = unlist(flight.data.te[delay16.idx])
+X_test = flight.data.te[,-delay16.idx]
+y_test = unlist(flight.data.te[,delay16.idx])
 
 # only look at numeric columns
 X_train = as.matrix(X_train[, which(sapply(X_train, is.numeric))])
