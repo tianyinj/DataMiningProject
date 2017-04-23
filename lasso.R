@@ -8,9 +8,9 @@ y_train = unlist(flight.data.tr[delay15.idx])
 
 # read in test data
 flight.data.te = read.csv('dep2016_visible.csv')
-delay15.idx = which(names(flight.data.te) == 'DEP_DEL15')
-X_test = flight.data.te[-delay15.idx]
-y_test = unlist(flight.data.te[delay15.idx])
+delay16.idx = which(names(flight.data.te) == 'DEP_DEL15')
+X_test = flight.data.te[-delay16.idx]
+y_test = unlist(flight.data.te[delay16.idx])
 
 # only look at numeric columns
 X_train = as.matrix(X_train[, which(sapply(X_train, is.numeric))])
