@@ -1,0 +1,52 @@
+---
+title: "462-project"
+output: html_document
+---
+
+```{r}
+# libraries
+library(protoclust)
+library(dplyr)
+library(MASS)
+library(cluster)
+library(rgl)
+
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
+               "#0072B2", "#D55E00", "#CC79A7")
+
+# departing flight data
+dep2015 <- read.csv("dep2015.csv")
+dep2016_visible <- read.csv("dep2016_visible.csv")
+
+# subset of the continuous values of departing flight data
+dep2015_cont <- dplyr::select(dep2015, CRS_DEP_TIME, DEP_TIME, DEP_DELAY, DEP_DELAY_NEW, TAXI_OUT, WHEELS_OFF, WHEELS_ON, TAXI_IN, CRS_ARR_TIME, ARR_TIME, ARR_DELAY, ARR_DELAY_NEW, CRS_ELAPSED_TIME, ACTUAL_ELAPSED_TIME, AIR_TIME, DISTANCE, CARRIER_DELAY, WEATHER_DELAY, NAS_DELAY, SECURITY_DELAY, LATE_AIRCRAFT_DELAY, FIRST_DEP_TIME, TOTAL_ADD_GTIME, LONGEST_ADD_GTIME)
+
+# center & scale
+dep2015_cont_scale <- scale(dep2015_cont)
+
+#####################    PCA   #################################
+# High collinearity in the data, so use PCA to reduce dimensions a bit.
+pca_dep2015 <- princomp(dep2015_cont_scale, cor = TRUE)
+
+# how is the variance spread out over dimensuons
+plot(pca_dep2015$sdev^2/sum(pca_dep2015$sdev^2))
+
+plot(cumsum(pca_dep2015$sdev^2)/sum(pca_dep2015$sdev^2), main='Cumulative proportion of variance explained', xlab='Number of components',ylab='Proportion of variance explained')
+
+# the first 10 components explain about 94%?
+comp <- data.frame(pca_dep2015$scores[, 1:10])
+
+###################   K MEANS   #####################################
+k_means <- kmeans(comp, centers = 10, nstart = 25, iter.max = 1000, algorithm = "Lloyd")
+
+# look at the clusters
+plot(comp, col = k_means$cluster)
+plot3d(comp$Comp.1, comp$Comp.2, comp$Comp.3, col = cbPalette[k_means$cluster])
+
+table(k_means$cluster, dep2015$DEP_DEL15)
+
+###################  PROTOTYPE #######################################
+#comp_dist <- dist(comp)
+#proto_hier <- protoclust(comp_dist)  
+```
+
