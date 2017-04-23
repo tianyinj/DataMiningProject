@@ -1,0 +1,59 @@
+```{r}
+setwd("/Users/anniezhang/Documents/DataMiningProject")
+dep2015 = read.csv("dep2015.csv", header=T)
+dep2016_visible = read.csv("dep2016_visible.csv", header=T)
+
+library(dplyr)
+dep2015_cont <- dplyr::select(dep2015, CRS_DEP_TIME, DEP_TIME, DEP_DELAY, DEP_DELAY_NEW, TAXI_OUT, WHEELS_OFF, WHEELS_ON, TAXI_IN, CRS_ARR_TIME, ARR_TIME, ARR_DELAY, ARR_DELAY_NEW, CRS_ELAPSED_TIME, ACTUAL_ELAPSED_TIME, AIR_TIME, DISTANCE, CARRIER_DELAY, WEATHER_DELAY, NAS_DELAY, SECURITY_DELAY, LATE_AIRCRAFT_DELAY, FIRST_DEP_TIME, TOTAL_ADD_GTIME, LONGEST_ADD_GTIME)
+
+dep2016_cont <- dplyr::select(dep2016_visible, CRS_DEP_TIME, DEP_TIME, DEP_DELAY, DEP_DELAY_NEW, TAXI_OUT, WHEELS_OFF, WHEELS_ON, TAXI_IN, CRS_ARR_TIME, ARR_TIME, ARR_DELAY, ARR_DELAY_NEW, CRS_ELAPSED_TIME, ACTUAL_ELAPSED_TIME, AIR_TIME, DISTANCE, CARRIER_DELAY, WEATHER_DELAY, NAS_DELAY, SECURITY_DELAY, LATE_AIRCRAFT_DELAY, FIRST_DEP_TIME, TOTAL_ADD_GTIME, LONGEST_ADD_GTIME)
+```
+
+```{r}
+###LDA
+#fit_lda = lda(dep2015_cont,dep2015$DEP_DEL15)
+#yhat_lda = predict(fit_lda,newdata = dep2016_cont$class)
+#Z =  dep2016_cont%*% fit_lda$scaling 
+
+#####################    PCA   #################################
+dep2015_cont_scale <- scale(dep2015_cont)
+pca_dep2015 = princomp(dep2015_cont_scale, cor = TRUE)
+plot(pca_dep2015$sdev^2/sum(pca_dep2015$sdev^2))
+comp <- data.frame(pca_dep2015$scores[, 1:10])
+
+#####################    SINGLE LINKAGE   #################################
+library(rgl)
+points.dist = dist(comp)
+single.clust = hclust(points.dist, method="single")
+plot(single.clust)
+#abline(h=mean(rev(single.clust$height)[(k-1):k]), col="red")
+k=10
+cluster.assign = cutree(single.clust, k=10)
+table(cluster.assign, dep2015$DEP_DEL15)
+plot(comp, col=cluster.assign+2)
+plot3d(comp$Comp.1, comp$Comp.2, comp$Comp.3, col = cbPalette[cluster.assign])
+
+
+###complete linkage
+complete.clust = hclust(points.dist, method="complete")
+plot(complete.clust)
+k=10
+cluster.assign = cutree(complete.clust, k=10)
+table(cluster.assign, dep2015$DEP_DEL15)
+plot(comp, col=cluster.assign+2)
+plot3d(comp$Comp.1, comp$Comp.2, comp$Comp.3, col = cbPalette[cluster.assign])
+
+
+###Average linkage
+average.clust = hclust(points.dist, method="average")
+plot(average.clust)
+k=2
+cluster.assign = cutree(average.clust, k=2)
+table(cluster.assign, dep2015$DEP_DEL15)
+plot(comp, col=cluster.assign+2)
+plot3d(comp$Comp.1, comp$Comp.2, comp$Comp.3, col = cbPalette[cluster.assign])
+
+
+```
+
+
