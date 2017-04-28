@@ -29,13 +29,15 @@ coef(fit_lasso, s=fit_cv_lasso$lambda.1se)
 
 # Compute the predictions on new data using beta at min lambda
 yhat_lasso = predict(fit_lasso,newx=X_test,s=fit_cv_lasso$lambda.min)
+yhat_lasso = ifelse(yhat_lasso > 0.5, 1, 0)
 # Check prediction error - min lambda
-mean((yhat_lasso-y_test)^2)
+mean(yhat_lasso != y_test)
 
 # Compute the predictions on new data using beta at 1 se lambda
 yhat_lasso = predict(fit_lasso,newx=X_test,s=fit_cv_lasso$lambda.1se)
+yhat_lasso = ifelse(yhat_lasso > 0.5, 1, 0)
 # Check prediction error - 1 se lambda
-mean((yhat_lasso-y_test)^2)
+mean(yhat_lasso != y_test)
 
 # Compare them to estimated errors
 # estimated error - min lambda
