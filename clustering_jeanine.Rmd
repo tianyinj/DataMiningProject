@@ -10,6 +10,7 @@ library(dplyr)
 library(MASS)
 library(cluster)
 library(rgl)
+library(randomForest)
 
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
                "#0072B2", "#D55E00", "#CC79A7")
@@ -17,14 +18,22 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
 # departing flight data
 dep2015 <- read.csv("dep2015.csv")
 dep2016_visible <- read.csv("dep2016_visible.csv")
+flight2016_guess <- read.csv("flights2016_guess.csv")
+
+source("remove_columns.R")
+
+# removing columns that give info about delays
+dep2015 <- remove.columns(dep2015)
+dep2016_visible <- remove.columns(dep2016_visible)
 
 # subset of the continuous values of departing flight data
-dep2015_cont <- dplyr::select(dep2015, CRS_DEP_TIME, DEP_TIME, DEP_DELAY, DEP_DELAY_NEW, TAXI_OUT, WHEELS_OFF, WHEELS_ON, TAXI_IN, CRS_ARR_TIME, ARR_TIME, ARR_DELAY, ARR_DELAY_NEW, CRS_ELAPSED_TIME, ACTUAL_ELAPSED_TIME, AIR_TIME, DISTANCE, CARRIER_DELAY, WEATHER_DELAY, NAS_DELAY, SECURITY_DELAY, LATE_AIRCRAFT_DELAY, FIRST_DEP_TIME, TOTAL_ADD_GTIME, LONGEST_ADD_GTIME)
+dep2015_cont <- dplyr::select(dep2015, CRS_DEP_TIME, CRS_ARR_TIME, CRS_ELAPSED_TIME, DISTANCE)
 
 # center & scale
 dep2015_cont_scale <- scale(dep2015_cont)
 
-#####################    PCA   #################################
+#####################    UNSUPERVISED CLUSTERING   #################################
+##   PCA   ##
 # High collinearity in the data, so use PCA to reduce dimensions a bit.
 pca_dep2015 <- princomp(dep2015_cont_scale, cor = TRUE)
 
@@ -33,11 +42,11 @@ plot(pca_dep2015$sdev^2/sum(pca_dep2015$sdev^2))
 
 plot(cumsum(pca_dep2015$sdev^2)/sum(pca_dep2015$sdev^2), main='Cumulative proportion of variance explained', xlab='Number of components',ylab='Proportion of variance explained')
 
-# the first 10 components explain about 94%?
-comp <- data.frame(pca_dep2015$scores[, 1:10])
+# the first 2 components explain about 94%?
+comp <- data.frame(pca_dep2015$scores[, 1:3])
 
-###################   K MEANS   #####################################
-k_means <- kmeans(comp, centers = 10, nstart = 25, iter.max = 1000, algorithm = "Lloyd")
+##  K MEANS   ##
+k_means <- kmeans(comp, centers = 3, nstart = 25, iter.max = 1000, algorithm = "Lloyd")
 
 # look at the clusters
 plot(comp, col = k_means$cluster)
@@ -45,8 +54,40 @@ plot3d(comp$Comp.1, comp$Comp.2, comp$Comp.3, col = cbPalette[k_means$cluster])
 
 table(k_means$cluster, dep2015$DEP_DEL15)
 
-###################  PROTOTYPE #######################################
+##  PROTOTYPE  ##
 #comp_dist <- dist(comp)
 #proto_hier <- protoclust(comp_dist)  
+
+###################  SUPERVISED CLUSTERING  ##################################
+##  LDA ##
+flight_lda <- lda(x = dep2015_cont, grouping = dep2015$DEP_DEL15)
+lda_Z <- as.matrix(dep2015_cont) %*% flight_lda$scaling
+plot(lda_Z, col = k_means$cluster, main = "Projected test set points and k means predicted class")
+
+##  RANDOM FOREST  ##
+# removing the TAIL_NUM var since it has too many factor levels
+# removing UNIQUE CARRIER, DEST_AIRPORT_SEQ_ID, DEST because randomforest has problems with new factor levels in the test set 
+dep2015_train <- dep2015[,-c(6, 8, 12, 13)]
+dep2016_test <- dep2016_visible[,-c(6, 8, 12, 13)]
+
+rf <- randomForest(factor(DEP_DEL15) ~., data = dep2015_train)
+
+# train error
+yhat_rf_train <- predict(rf, dep2015_train)
+mean(yhat_rf_train != dep2015$DEP_DEL15)
+
+# test error
+yhat_rf_test <- predict(rf, dep2016_test)
+mean(yhat_rf_test != dep2016_visible$DEP_DEL15)
+
+# day of month seems the most important
+varImpPlot(rf)
+
+library(mgcv)
+flight_gam = gam(DEP_DEL15 ~ s(DAY_OF_MONTH) + s(DAY_OF_WEEK, k = 5) + s(CRS_ARR_TIME) + s(CRS_DEP_TIME), data = dep2015_train, family = "binomial")
+
+yhat_gam_test = predict(flight_gam, dep2016_test, type = "response")
+yhat_gam_test$class = ifelse(yhat_gam_test < 0.5, 0, 1)
+mean(yhat_gam_test$class != dep2016_test$DEP_DEL15)
 ```
 
