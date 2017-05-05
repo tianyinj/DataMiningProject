@@ -117,13 +117,20 @@ arv_flights <- flights.normal[flights.normal$ORIGIN!="PIT",]
 
 ######################### Delay on arrival ####################
 
+tail_num_idx = which(names(dep_flights) == "TAIL_NUM")
+carrier_idx = which(names(dep_flights) == "UNIQUE_CARRIER")
+year_idx = which(names(dep_flights) == "YEAR")
+month_idx = which(names(dep_flights) == "MONTH")
+day_idx = which(names(dep_flights) == "DAY_OF_MONTH")
+dep_time_idx = which(names(dep_flights) == "CRS_DEP_TIME")
+
 find.prev.delay <- function(row){
-  tailnum = row[which(names(dep_flights) == "TAIL_NUM")]
-  carrier = row[which(names(dep_flights) == "UNIQUE_CARRIER")]
-  year = row[which(names(dep_flights) == "YEAR")]
-  month = row[which(names(dep_flights) == "MONTH")]
-  day = row[which(names(dep_flights) == "DAY_OF_MONTH")]
-  dep_time = row[which(names(dep_flights) == "CRS_DEP_TIME")]
+  tailnum = row[tail_num_idx]
+  carrier = row[carrier_idx]
+  year = row[year_idx]
+  month = row[month_idx]
+  day = row[day_idx]
+  dep_time = row[dep_time_idx]
   
   
   aux = which(arv_flights$YEAR==year & arv_flights$MONTH==month & arv_flights$DAY_OF_MONTH==day
