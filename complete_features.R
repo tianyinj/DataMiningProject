@@ -55,7 +55,7 @@ remove.columns = function(data.frame) {
 
 ########################## Main Function ############################ 
 
-prepare.df = function(df, new_filename) {
+prepare.df = function(df, new_filename=NA) {
   ###############################Preliminary Cleaning#####################################
   
   # Time formatting
@@ -141,6 +141,7 @@ prepare.df = function(df, new_filename) {
   ######################### Delay on arrival ####################
   
   dep_flights$HAS_PREV_DELAY = apply(dep_flights, 1, find.prev.delay)
+  dep_flights$HAS_PREV_DELAY = as.factor(dep_flights$HAS_PREV_DELAY)
   
   ######################### Holidays ############################
   # November and December get a score of 2
@@ -148,6 +149,8 @@ prepare.df = function(df, new_filename) {
   
   # June and July get a score of 1
   dep_flights$HOLIDAY = ifelse(dep_flights$MONTH == 6 | dep_flights$MONTH == 7, 1, 0)
+  
+  dep_flights$HOLIDAY = as.factor(dep_flights$HOLIDAY)
   
   ################### Flushing out .. ###################
   if(!is.na(new_filename)) {
@@ -160,3 +163,8 @@ prepare.df = function(df, new_filename) {
 df<-read.csv("flights2015.csv")
 flight.data.tr = prepare.df(df, "complete_training.csv")
 flight.data.tr = remove.columns(flight.data.tr)
+
+############## Training data set ##########################
+delay15.idx = which(names(flight.data.tr) == 'DEP_DEL15')
+X_train = flight.data.tr[,-delay15.idx]
+y_train = unlist(flight.data.tr[,delay15.idx])
