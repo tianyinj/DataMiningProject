@@ -132,9 +132,9 @@ find.prev.delay <- function(row){
   if (length(aux) == 0) {
     return(0)
   }
-  
-  result = arv_flights[aux[length(aux)], 29]
-  return(result)
+  if (arv_flights[aux[length(aux)], 27] > 0) return(1)
+
+  return(0)
 }
 
 dep_flights$HAS_PREV_DELAY = apply(dep_flights, 1, find.prev.delay)
