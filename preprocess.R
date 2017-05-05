@@ -21,6 +21,8 @@ filling.fun <- function(data=flights_clean, x, y=flights_clean$DEP_DELAY_NEW){
     return(0)
   }
 }
+
+
 ############################## END ##################################
 
 df<-read.csv("flights2016_visible.csv")
@@ -28,12 +30,12 @@ df<-read.csv("flights2016_visible.csv")
 ###############################Preliminary Cleaning#####################################
 
 # Time formatting
-#df$DEP_TIME <- formatC(df$DEP_TIME, width = 4,flag = 0)
-#df$ARR_TIME <- formatC(df$ARR_TIME, width = 4,flag = 0)
-#df$CRS_DEP_TIME <- formatC(df$CRS_DEP_TIME, width = 4,flag = 0)
-#df$CRS_ARR_TIME <- formatC(df$CRS_ARR_TIME, width = 4,flag = 0)
-#df$WHEELS_OFF <- formatC(df$WHEELS_OFF, width = 4,flag = 0)
-#df$WHEELS_ON <- formatC(df$WHEELS_ON, width = 4,flag = 0)
+df$DEP_TIME <- formatC(df$DEP_TIME, width = 4,flag = 0)
+df$ARR_TIME <- formatC(df$ARR_TIME, width = 4,flag = 0)
+df$CRS_DEP_TIME <- formatC(df$CRS_DEP_TIME, width = 4,flag = 0)
+df$CRS_ARR_TIME <- formatC(df$CRS_ARR_TIME, width = 4,flag = 0)
+df$WHEELS_OFF <- formatC(df$WHEELS_OFF, width = 4,flag = 0)
+df$WHEELS_ON <- formatC(df$WHEELS_ON, width = 4,flag = 0)
 
 
 #Use airport sequence id to indicate origin and dest
@@ -102,6 +104,43 @@ diff <- as.vector(flights.normal$DEP_DELAY_NEW - flights.normal$CARRIER_DELAY - 
                   - flights.normal$SECURITY_DELAY - flights.normal$SECURITY_DELAY)
 flights.normal$NA_DELAY <- ifelse(diff > 0, diff, 0)
 
+flights.normal$DEST_LONGITUDE <- 0
+flights.normal$DEST_LATITUDE <- 0
+
+for (dest in unique(flights.normal$DEST)){
+  lat <- airports[which(airports$IATA==dest),]$LATITUDE
+  long <- airports[which(airports$IATA==dest),]$LONGITUDE
+  flights.normal[which(flights.normal$DEST==dest),]$DEST_LATITUDE <- lat
+  flights.normal[which(flights.normal$DEST==dest),]$DEST_LONGITUDE <- long
+}
+
+flights.normal$ONE_HOUR_TRAFFIC <- -1
+for (row in 1:length(flights.normal$DEP_TIME_BLK)){
+  block <- flights.normal[row,]$DEP_TIME_BLK
+  mm <- flights.normal[row,]$MONTH
+  dd <- flights.normal[row,]$DAY_OF_MONTH
+  num <- length(which(flights.normal$MONTH == mm & flights.normal$DAY_OF_MONTH == dd
+                              &flights.normal$DEP_TIME_BLK == block))
+  flights.normal[row,"ONE_HOUR_TRAFFIC"] <- num
+  
+}
+
+#get_time <- function(row){
+#  year = row[1]
+#  month = row[2]
+#  day = row[3]
+#  mh = row[14]
+  
+#  str = paste (year,month,day,mh, sep = " ", collapse = NULL)
+#  time <- strptime(str, "%Y %m %d %H%M")
+#  return(time)
+#}
+
+
+
+#flights.normal$crs_dep_time <- apply(flights.normal, 1, get_time)
+#flights.normal$crs_arv_time <- apply(flights.normal, 1, get_time)
+
 
 ######################### Seperating ##########################
 
@@ -109,9 +148,32 @@ dep_flights <- flights.normal[flights.normal$ORIGIN=="PIT",]
 arv_flights <- flights.normal[flights.normal$ORIGIN!="PIT",]
 
 
+find.prev.delay <- function(row){
+  tailnum = row[8]
+  carrier = row[6]
+  year = row[1]
+  month = row[3]
+  day = row[4]
+  dep_time = row[14]
+  
+  
+  aux = which(arv_flights$YEAR==year & arv_flights$MONTH==month & arv_flights$DAY_OF_MONTH==day
+              & arv_flights$CRS_ARR_TIME<=dep_time & arv_flights$TAIL_NUM==tailnum 
+              & arv_flights$UNIQUE_CARRIER == carrier)
+  if (length(aux) == 0) {
+    return(0)
+  }
+  
+  nrow = nrow(aux)
+  
+  result = arv_flights[aux[length(aux)], 29]
+  return(result)
+}
 
+dep_flights$has_prev_delay = apply(dep_flights, 1, find.prev.delay)
+
+write.csv(dep_flights, "dep2016_expanded1.csv", row.names=FALSE)
 
 ################### Flushing out .. ###################
-write.csv(dep_flights, "dep2016_visible.csv", row.names=FALSE)
-
+write.csv(dep_flights, "dep2016_expanded.csv", row.names=FALSE)
 
