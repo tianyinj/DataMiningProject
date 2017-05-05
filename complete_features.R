@@ -118,12 +118,12 @@ arv_flights <- flights.normal[flights.normal$ORIGIN!="PIT",]
 ######################### Delay on arrival ####################
 
 find.prev.delay <- function(row){
-  tailnum = row[which(names(dep_flights) == "TAIL_NUM")]
-  carrier = row[which(names(dep_flights) == "UNIQUE_CARRIER")]
-  year = row[which(names(dep_flights) == "YEAR")]
-  month = row[which(names(dep_flights) == "MONTH")]
-  day = row[which(names(dep_flights) == "DAY_OF_MONTH")]
-  dep_time = row[which(names(dep_flights) == "CRS_DEP_TIME")]
+  tailnum = row[8]
+  carrier = row[6]
+  year = row[1]
+  month = row[3]
+  day = row[4]
+  dep_time = row[14]
   
   
   aux = which(arv_flights$YEAR==year & arv_flights$MONTH==month & arv_flights$DAY_OF_MONTH==day
@@ -132,8 +132,6 @@ find.prev.delay <- function(row){
   if (length(aux) == 0) {
     return(0)
   }
-  
-  nrow = nrow(aux)
   
   result = arv_flights[aux[length(aux)], 29]
   return(result)
