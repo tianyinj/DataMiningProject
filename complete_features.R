@@ -132,15 +132,12 @@ find.prev.delay <- function(row){
   day = row[day_idx]
   dep_time = row[dep_time_idx]
   
-  
   aux = which(arv_flights$YEAR==year & arv_flights$MONTH==month & arv_flights$DAY_OF_MONTH==day
               & arv_flights$CRS_ARR_TIME<=dep_time & arv_flights$TAIL_NUM==tailnum 
               & arv_flights$UNIQUE_CARRIER == carrier)
   if (length(aux) == 0) {
     return(0)
   }
-  
-  nrow = nrow(aux)
   
   result = arv_flights[aux[length(aux)], 29]
   return(result)
