@@ -47,3 +47,21 @@ fit_cv_lasso$cvm[which(fit_cv_lasso$lambda == fit_cv_lasso$lambda.1se)]
 
 # plot cross validation curves
 plot(fit_cv_lasso)
+
+###################
+
+# fit logistic regression
+glm.model = glm(y_train ~ X_train, family='binomial')
+
+yhat_train = predict(glm.model, type='response')
+yhat_train = ifelse(yhat_train > 0.5, 1, 0)
+yhat_test = predict(glm.model, newx=X_test, type='response')
+yhat_test = ifelse(yhat_test > 0.5, 1, 0)
+
+# training error (misclassification rate)
+mean(yhat_train != y_train)
+
+# test error (misclassification rate)
+mean(yhat_test != y_test)
+
+###################
