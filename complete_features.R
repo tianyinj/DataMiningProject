@@ -146,20 +146,30 @@ find.prev.delay <- function(row){
 dep_flights$HAS_PREV_DELAY = apply(dep_flights, 1, find.prev.delay)
 dep_flights$HAS_PREV_DELAY = as.factor(dep_flights$HAS_PREV_DELAY)
 
-######################### Holidays ############################
-# November and December get a score of 2
-dep_flights$HOLIDAY = ifelse(dep_flights$MONTH == 11 | dep_flights$MONTH == 12, 2, 0)
-
-# June and July get a score of 1
-dep_flights$HOLIDAY = ifelse(dep_flights$MONTH == 6 | dep_flights$MONTH == 7, 1, 0)
-
-dep_flights$HOLIDAY = as.factor(dep_flights$HOLIDAY)
-
 ################### Flushing out .. ###################
 write.csv(dep_flights, "complete_training.csv", row.names=FALSE)
 
 flight.data.tr = dep_flights
 flight.data.tr = remove.columns(flight.data.tr)
+
+################## Add temperature and humidity #################
+temp = read.csv("temp2015.csv")
+humidity = read.csv("humidity2015.csv")
+flight.data.tr$TEMP = temp$x
+flight.data.tr$HUMIDITY = humidity$x
+
+na.idx = which(is.na(flight.data.tr$HUMIDITY))
+avg.humidity = mean(flight.data.tr$HUMIDITY, na.rm=TRUE)
+flight.data.tr$HUMIDITY[na.idx] = avg.humidity
+
+######################### Holidays ############################
+# November and December get a score of 1
+flight.data.tr$HOLIDAY = ifelse((flight.data.tr$MONTH == 11 | flight.data.tr$MONTH == 12) & (flight.data.tr$DAY_OF_MONTH > 15), 1, 0)
+
+# June and July get a score of 1
+# flight.data.tr$HOLIDAY = ifelse(flight.data.tr$MONTH == 6 | flight.data.tr$MONTH == 7, 1, 0)
+
+flight.data.tr$HOLIDAY = as.factor(flight.data.tr$HOLIDAY)
 
 ############## Training data set ##########################
 delay15.idx = which(names(flight.data.tr) == 'DEP_DEL15')
