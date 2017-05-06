@@ -1,0 +1,133 @@
+---
+title: "Exploratory Analysis"
+author: "Jeanine Huang"
+date: "May 6, 2017"
+output:
+  html_document:
+    toc:  true
+    toc_float:  true
+    code_folding:  hide
+---
+
+```{r, warning = F, message = F}
+library(tidyverse)
+library(ggmap)
+
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
+               "#0072B2", "#D55E00", "#CC79A7")
+
+# departing flight data
+dep2015 <- read.csv("dep2015_expanded.csv")
+dep2016_visible <- read.csv("dep2016_visible.csv")
+flight2016_guess <- read.csv("flights2016_guess.csv")
+
+source("remove_columns.R")
+
+# removing columns that give info about delays
+dep2015 <- remove.columns(dep2015)
+dep2016_visible <- remove.columns(dep2016_visible)
+dep2015$DEP_DEL15 <- as.factor(dep2015$DEP_DEL15)
+```
+
+
+### Distribution of Delays
+```{r}
+# delay bar chart
+ggplot(dep2015, aes(x = DEP_DEL15)) + geom_bar(aes(fill = DEP_DEL15)) +
+  scale_fill_manual(values = cbPalette, labels = c("Not Delayed", "Delayed")) +
+  labs(title = "Distribution of Flight Delays",
+       subtitle = "Delays longer than 15 mins",
+       x = "Delay",
+       y = "Number of Delays",
+       fill = "Delayed?") +
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())
+```
+
+
+### Flights delayed by week
+```{r}
+
+week_delay_marginal <- dep2015 %>%
+  mutate(DAY_OF_WEEK = factor(dep2015$DAY_OF_WEEK, labels= c("Monday", "Tuesday",
+                                           "Wednesday", "Thursday", "Friday",
+                                           "Saturday", "Sunday"))) %>%
+  group_by(DAY_OF_WEEK, DEP_DEL15) %>%
+  summarize(count = n(),
+            total = nrow(dep2015),
+            proportion = round(count / total, 4),
+            percentage = proportion * 100)
+
+ggplot(week_delay_marginal, aes(x = DAY_OF_WEEK, y = count, fill = DEP_DEL15)) + 
+  geom_bar(stat = "identity", position = "fill") +
+  scale_fill_manual(values = cbPalette, labels = c("Not Delayed", "Delayed")) +
+  labs(title = "Flight Delays by Day of Week",
+       x = "Day of Week",
+       y = "Proportion of Delays",
+       fill = "Delayed?")
+```
+
+
+### Flights delayed by month
+```{r}
+
+ordered_months = c("January", "February", "March", "April", "May", "June", "July", "August",
+                   "September", "October", "November", "December")
+month_delay_marginal <- dep2015 %>%
+  mutate(MONTH = factor(dep2015$MONTH, labels = ordered_months)) %>%
+  group_by(MONTH, DEP_DEL15) %>%
+  summarize(count = n())
+
+ggplot(month_delay_marginal, aes(x = MONTH, y = count, fill = DEP_DEL15)) +
+  geom_bar(stat = "identity", position = "fill") +
+  scale_fill_manual(values = cbPalette, labels = c("Not Delayed", "Delayed")) +
+  labs(title = "Flight Delays by Month",
+       x = "Month",
+       y = "Proportion of Delays",
+       fill = "Delayed?") +
+  theme(axis.text.x = element_text(angle = 45))
+```
+
+
+### Flights delayed by departure time
+```{r}
+ggplot(dep2015, aes(x = CRS_DEP_TIME, y = ..density..)) +
+  geom_density(aes(fill = DEP_DEL15), alpha = 0.5) +
+  scale_fill_manual(values = cbPalette, labels = c("Not Delayed", "Delayed")) +
+  labs(title = "Distribution of Delays by CRS Departure Time",
+       x = "CRS Departure Time",
+       y = "Density",
+       fill = "Delayed?")
+```
+
+
+### Flights Delayed by Arrival Time
+```{r}
+ggplot(dep2015, aes(x = CRS_ARR_TIME, y = ..density..)) +
+  geom_density(aes(fill = DEP_DEL15), alpha = 0.5) +
+  scale_fill_manual(values = cbPalette, labels = c("Not Delayed", "Delayed")) +
+  labs(title = "Distribution of Delays by CRS Arrival Time",
+       x = "CRS Arrival Time",
+       y = "Density",
+       fill = "Delayed?")
+```
+
+### Map
+```{r, warning = F, message = F}
+# a map
+arrivals <- dep2015 %>%
+  group_by(DEST_LONGITUDE, DEST_LATITUDE) %>%
+  summarize(flights = n())
+
+my_gradient <- c("#3B4371", "#F3904F",  "yellow")
+
+ggmap(get_map(location = "United States", zoom = 4)) +
+  geom_point(aes(x = DEST_LONGITUDE, y = DEST_LATITUDE, 
+                 size = sqrt(flights)), 
+             data = arrivals, alpha = 0.4) +
+  labs(title = "US Airport Destinations",
+       x = "Longitude",
+       y = "Latitude",
+       size = "Number of flights")
+```
+
